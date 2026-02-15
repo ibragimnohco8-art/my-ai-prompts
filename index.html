@@ -3,64 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Prompt Store</title>
+    <title>AI Prompt Search</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --bg: #000; --card: #1C1C1E; --accent: #0A84FF; --text: #fff; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 50px; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; }
         header { padding: 20px; text-align: center; border-bottom: 1px solid #333; position: sticky; top: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 100; }
-        .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--accent); }
+        .logo { font-size: 22px; font-weight: 800; color: var(--accent); }
         .grid { display: grid; grid-template-columns: 1fr; gap: 20px; padding: 15px; }
         .card { background: var(--card); border-radius: 20px; overflow: hidden; border: 1px solid #2C2C2E; }
         .card img { width: 100%; height: 300px; object-fit: cover; }
         .content { padding: 15px; }
-        h3 { margin: 0 0 8px 0; font-size: 18px; }
-        p { color: #8E8E93; font-size: 14px; margin: 0 0 15px 0; line-height: 1.4; }
-        .copy-btn { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 15px; active: opacity 0.7; }
+        .copy-btn { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; }
     </style>
 </head>
 <body>
-
-<header><div class="logo">PROMPT SEARCH AI</div></header>
-<div class="grid" id="feed"></div>
-
-<script>
-    // ТВОИ ДАННЫЕ ПОДКЛЮЧЕНИЯ
-    const SB_URL = "https://lfunlrtluxyuagxwsxss.supabase.co";
-    const SB_KEY = "sb_publishable_Ci-QA2C3EwebKmn-WEM_Sg_69TtdQEb";
-    const supabase = Supabase.createClient(SB_URL, SB_KEY);
-
-    async function loadPrompts() {
-        const { data, error } = await supabase
-            .from('prompts')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error(error);
-            return;
+    <header><div class="logo">PROMPT SEARCH AI</div></header>
+    <div class="grid" id="feed"></div>
+    <script>
+        const SB_URL = "https://lfunlrtluxyuagxwsxss.supabase.co";
+        const SB_KEY = "sb_publishable_Ci-QA2C3EwebKmn-WEM_Sg_69TtdQEb";
+        const supabase = Supabase.createClient(SB_URL, SB_KEY);
+        async function load() {
+            const { data } = await supabase.from('prompts').select('*').order('created_at', { ascending: false });
+            if (data) {
+                document.getElementById('feed').innerHTML = data.map(item => `
+                    <div class="card">
+                        <img src="${item.img || ''}">
+                        <div class="content">
+                            <h3>${item.title}</h3>
+                            <p>${item.desc_text}</p>
+                            <button class="copy-btn" onclick="navigator.clipboard.writeText('${item.prompt}')">Копировать промт</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
         }
-
-        const feed = document.getElementById('feed');
-        feed.innerHTML = data.map(item => `
-            <div class="card">
-                <img src="${item.img || 'https://via.placeholder.com/400x300?text=No+Image'}" alt="">
-                <div class="content">
-                    <h3>${item.title}</h3>
-                    <p>${item.desc_text}</p>
-                    <button class="copy-btn" onclick="copyPrompt('${item.prompt.replace(/'/g, "\\'")}')">Копировать промт</button>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    function copyPrompt(text) {
-        navigator.clipboard.writeText(text);
-        alert("Промт скопирован!");
-    }
-
-    loadPrompts();
-</script>
-
+        load();
+    </script>
 </body>
 </html>
