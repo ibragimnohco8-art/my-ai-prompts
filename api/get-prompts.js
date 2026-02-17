@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       SUPABASE_SERVICE_ROLE
     );
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseв
       .from("prompts")
       .select("*")
       .order("created_at", { ascending: false });
