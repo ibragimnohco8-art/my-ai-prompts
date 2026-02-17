@@ -1,31 +1,7 @@
-<script>
-const SUPABASE_URL = "https://bowqcdysazxnxgocblcg.supabase.co"
-const SUPABASE_KEY = "ТВОЙ_PUBLISHABLE_KEY_СЮДА"
+<!DOCTYPE html>
+<html>
+<body style="background:black;color:white;text-align:center;padding:40px;">
+<h1>Сайт работает</h1>
+</body>
+</html>
 
-async function loadPrompts() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/prompts?select=*`, {
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`
-    }
-  })
-
-  const data = await res.json()
-  console.log(data)
-
-  const container = document.getElementById("prompts")
-
-  data.forEach(p => {
-    container.innerHTML += `
-      <div>
-        <h3>${p.title}</h3>
-        <p>${p.text}</p>
-        <small>${p.category}</small>
-        <hr>
-      </div>
-    `
-  })
-}
-
-loadPrompts()
-</script>
