@@ -11,7 +11,7 @@
 
 <script>
 const SUPABASE_URL = "https://bowqcdysazxnxgocblcg.supabase.co"
-const SUPABASE_KEY = "ВСТАВЬ_СЮДА_PUBLISHABLE_KEY"
+const SUPABASE_KEY = "sb_publishable_ncGsDuY6YOsvkMmJC9Iqcw_j32r_GZP"
 
 async function loadPrompts() {
   const res = await fetch(
@@ -25,9 +25,14 @@ async function loadPrompts() {
   )
 
   const data = await res.json()
-  console.log(data)
+  console.log("DATA:", data)
 
   const container = document.getElementById("prompts")
+
+  if (!Array.isArray(data)) {
+    container.innerHTML = "<p>Ошибка загрузки данных</p>"
+    return
+  }
 
   data.forEach(p => {
     container.innerHTML += `
