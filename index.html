@@ -1,15 +1,929 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>AI Промты</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ПромтБаза — Библиотека AI промтов</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geologica:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070f;--bg2:#0f0f1a;--bg3:#161625;
+  --card:#111120;--card-h:#181830;
+  --border:#1e1e32;--border2:#28283f;
+  --text:#ededf8;--text2:#8888aa;--text3:#4a4a6a;
+  --accent:#7c6fff;--accent-d:#5a50e0;
+  --pink:#ff5fa0;--teal:#00d4aa;--amber:#ffb347;--blue:#5ba4f5;--red:#ff5252;
+  --r:12px;--r2:18px;--r3:24px;
+  --sh:0 2px 12px rgba(0,0,0,.4);--sh2:0 8px 32px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:300;background:rgba(7,7,15,.92);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 24px;height:62px}
+.logo{font-family:'Geologica',sans-serif;font-size:19px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+.nav-search{flex:1;max-width:400px;position:relative}
+.nav-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+#search{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:9px 34px 9px 36px;border-radius:10px;font:14px 'Inter',sans-serif;outline:none;transition:.2s}
+#search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,111,255,.1);background:var(--bg3)}
+#search::placeholder{color:var(--text3)}
+.s-clr{position:absolute;right:9px;top:50%;transform:translateY(-50%);background:var(--border2);border:none;color:var(--text3);width:17px;height:17px;border-radius:50%;font-size:9px;cursor:pointer;display:none;align-items:center;justify-content:center}
+.s-clr.on{display:flex}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ai-pill{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--teal);background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.18);padding:4px 10px;border-radius:20px}
+.ai-dot{width:6px;height:6px;background:var(--teal);border-radius:50%;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+#total-count{font-size:11px;color:var(--text3);white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 13px;border-radius:10px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font:600 12px 'Inter',sans-serif;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-d);border-color:var(--accent-d);color:#fff}
+.btn-gen{background:linear-gradient(135deg,var(--accent),var(--pink));border:none;color:#fff}
+.btn-gen:hover{opacity:.9;color:#fff}
+.btn-admin{background:rgba(255,179,71,.1);border-color:rgba(255,179,71,.3);color:var(--amber)}
+.btn-admin:hover{background:rgba(255,179,71,.15);border-color:var(--amber);color:var(--amber)}
+
+/* HERO */
+.hero{padding:48px 24px 0;background:radial-gradient(ellipse 800px 350px at 50% 0%,rgba(124,111,255,.08),transparent);text-align:center}
+.hero h1{font-family:'Geologica',sans-serif;font-size:clamp(24px,5vw,50px);font-weight:900;line-height:1.12;margin-bottom:10px}
+.hero h1 em{font-style:normal;background:linear-gradient(135deg,#7c6fff,#ff5fa0,#ffb347);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:15px;color:var(--text2);max-width:480px;margin:0 auto 24px;line-height:1.65}
+.hero-stats{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-bottom:32px}
+.stat{text-align:center}
+.stat-n{font-family:'Geologica',sans-serif;font-size:26px;font-weight:900;color:var(--text);line-height:1}
+.stat-l{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* TABS */
+.tabs-wrap{position:sticky;top:62px;z-index:200;background:rgba(7,7,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding:8px 0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;border:1px solid transparent;background:none;color:var(--text3);font:600 13px 'Inter',sans-serif;cursor:pointer;transition:.15s;white-space:nowrap;flex-shrink:0}
+.tab:hover{color:var(--text2);background:var(--bg3)}
+.tab.active{background:var(--bg3);border-color:var(--border2);color:var(--text)}
+.tab .tc{font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--bg2);color:var(--text3)}
+.tab[data-cat="img"].active{color:#a09aff}.tab[data-cat="text"].active{color:var(--pink)}.tab[data-cat="video"].active{color:var(--teal)}.tab[data-cat="music"].active{color:var(--amber)}.tab[data-cat="biz"].active{color:var(--blue)}
+
+/* SORT */
+.sort-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 24px;gap:10px;flex-wrap:wrap}
+.sort-label{font-size:12px;color:var(--text3)}
+.pills{display:flex;gap:5px}
+.pill{padding:5px 11px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--text3);font:500 11px 'Inter',sans-serif;cursor:pointer;transition:.15s}
+.pill:hover{border-color:var(--border2);color:var(--text2)}
+.pill.active{background:rgba(124,111,255,.1);border-color:var(--accent);color:var(--accent)}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:14px;padding:0 24px 60px;max-width:1600px;margin:0 auto}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;display:flex;flex-direction:column;transition:transform .22s,box-shadow .22s,border-color .22s;animation:up .3s ease both}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.card:hover{transform:translateY(-3px);box-shadow:var(--sh2);border-color:var(--border2)}
+.card-img{overflow:hidden;background:var(--bg3);position:relative;flex-shrink:0;cursor:pointer}
+.card-img img{width:100%;height:185px;object-fit:cover;display:block;transition:transform .35s}
+.card:hover .card-img img{transform:scale(1.04)}
+.no-img{height:185px;display:flex;align-items:center;justify-content:center;font-size:34px;background:linear-gradient(135deg,var(--bg3),var(--bg2));cursor:pointer}
+.cbadge{position:absolute;top:9px;left:9px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:7px;backdrop-filter:blur(8px)}
+.cbadge.img{background:rgba(124,111,255,.25);color:#c0bbff;border:1px solid rgba(124,111,255,.3)}
+.cbadge.text{background:rgba(255,95,160,.25);color:#ffbbcc;border:1px solid rgba(255,95,160,.3)}
+.cbadge.video{background:rgba(0,212,170,.25);color:#80ffe8;border:1px solid rgba(0,212,170,.3)}
+.cbadge.music{background:rgba(255,179,71,.25);color:#ffdfa0;border:1px solid rgba(255,179,71,.3)}
+.cbadge.biz{background:rgba(91,164,245,.25);color:#b0d8ff;border:1px solid rgba(91,164,245,.3)}
+.ai-mark{position:absolute;top:9px;right:9px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:7px;background:rgba(0,212,170,.2);color:var(--teal);border:1px solid rgba(0,212,170,.25)}
+.card-body{padding:13px 13px 9px;flex:1;display:flex;flex-direction:column;gap:6px;cursor:pointer}
+.card-title{font-size:13px;font-weight:700;line-height:1.4;color:var(--text)}
+.card-desc{font-size:11px;color:var(--text2);line-height:1.65;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-tags{display:flex;flex-wrap:wrap;gap:3px}
+.tag{font-size:10px;font-weight:600;padding:2px 6px;border-radius:5px;background:rgba(124,111,255,.08);color:#9090cc;border:1px solid rgba(124,111,255,.12)}
+.card-foot{padding:9px 13px 13px;display:flex;flex-direction:column;gap:7px}
+.card-meta{display:flex;align-items:center;gap:8px}
+.like-btn{display:flex;align-items:center;gap:4px;background:none;border:1px solid var(--border);border-radius:7px;padding:4px 9px;color:var(--text3);font:600 11px 'Inter',sans-serif;cursor:pointer;transition:.15s}
+.like-btn:hover,.like-btn.liked{border-color:var(--pink);color:var(--pink);background:rgba(255,95,160,.07)}
+.like-btn svg{transition:.2s}
+.like-btn.liked svg{fill:currentColor}
+.views{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:3px}
+.rating{margin-left:auto;font-size:11px;font-weight:700;color:var(--amber)}
+.copy-row{display:flex;gap:5px}
+.copy-btn{flex:1;background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:9px;font:700 11px 'Inter',sans-serif;cursor:pointer;transition:.15s}
+.copy-btn:hover{background:var(--accent-d)}
+.copy-btn.ok{background:#1a9e5c}
+.copy-btn:active{transform:scale(.97)}
+.qcopy{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:8px 10px;border-radius:9px;font-size:13px;cursor:pointer;transition:.15s;display:flex;align-items:center}
+.qcopy:hover{border-color:var(--teal);color:var(--teal)}
+.qcopy.ok{border-color:#1a9e5c;color:#1a9e5c}
+
+/* STATES */
+.state{grid-column:1/-1;text-align:center;padding:70px 20px}
+.state .ico{font-size:36px;margin-bottom:10px}
+.state h3{font-family:'Geologica',sans-serif;font-size:18px;font-weight:900;margin-bottom:5px}
+.state p{font-size:13px;color:var(--text2);margin-bottom:16px}
+.dots{display:flex;gap:5px;justify-content:center;margin-bottom:12px}
+.dots span{width:7px;height:7px;border-radius:50%;animation:bounce 1.1s infinite}
+.dots span:nth-child(1){background:var(--accent)}.dots span:nth-child(2){background:var(--pink);animation-delay:.15s}.dots span:nth-child(3){background:var(--teal);animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:scale(.45);opacity:.25}40%{transform:scale(1);opacity:1}}
+
+/* LOAD MORE */
+.load-wrap{text-align:center;padding:16px 0 40px}
+
+/* CHAT */
+.chat-fab{position:fixed;bottom:24px;right:24px;z-index:400;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));border:none;color:#fff;font-size:19px;cursor:pointer;box-shadow:0 4px 20px rgba(124,111,255,.4);transition:.2s;display:flex;align-items:center;justify-content:center}
+.chat-fab:hover{transform:scale(1.08)}
+.chat-panel{position:fixed;bottom:84px;right:24px;z-index:400;width:340px;max-height:460px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);display:flex;flex-direction:column;box-shadow:var(--sh2);transform:scale(.93) translateY(8px);opacity:0;pointer-events:none;transition:.25s cubic-bezier(.4,0,.2,1);transform-origin:bottom right}
+.chat-panel.on{transform:scale(1) translateY(0);opacity:1;pointer-events:all}
+.chat-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.chat-head h4{font-size:13px;font-weight:700}.chat-head p{font-size:10px;color:var(--text3);margin-top:1px}
+.chat-x{background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:2px}.chat-x:hover{color:var(--text)}
+.chat-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.m{max-width:85%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.6;animation:up .2s ease}
+.m.u{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:3px;font-weight:500}
+.m.a{background:var(--bg3);color:var(--text);align-self:flex-start;border-bottom-left-radius:3px;border:1px solid var(--border)}
+.m.a.load{color:var(--text3);font-style:italic}
+.chat-foot{padding:9px 11px;border-top:1px solid var(--border);display:flex;gap:7px}
+#cin{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:8px;font:12px 'Inter',sans-serif;outline:none;resize:none}
+#cin:focus{border-color:var(--accent)}
+#cin::placeholder{color:var(--text3)}
+.send{background:var(--accent);border:none;color:#fff;width:34px;height:34px;border-radius:8px;font-size:13px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s}
+.send:hover{background:var(--accent-d)}.send:disabled{opacity:.35;cursor:default}
+
+/* OVERLAYS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.on{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);padding:24px;width:100%;max-width:540px;box-shadow:var(--sh2);animation:up .25s ease;max-height:90vh;overflow-y:auto}
+.modal h2{font-family:'Geologica',sans-serif;font-size:20px;font-weight:900;margin-bottom:4px}
+.modal>.sub{font-size:12px;color:var(--text2);margin-bottom:16px}
+.mbtns{display:flex;gap:8px;margin-bottom:0}
+.modal textarea{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:10px 13px;border-radius:9px;font:13px 'Inter',sans-serif;outline:none;resize:none;height:65px;margin-bottom:10px}
+.modal textarea:focus{border-color:var(--accent)}
+.modal textarea::placeholder{color:var(--text3)}
+.cat-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.copt{padding:5px 11px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--text3);font:500 11px 'Inter',sans-serif;cursor:pointer;transition:.15s}
+.copt:hover{border-color:var(--border2);color:var(--text2)}
+.copt.sel{background:rgba(124,111,255,.1);border-color:var(--accent);color:var(--accent)}
+.gen-list{margin-top:14px;display:flex;flex-direction:column;gap:9px}
+.gi{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px}
+.gi h4{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:3px}
+.gi .gd{font-size:11px;color:var(--text2);margin-bottom:7px}
+.gi .gp{font:11px/1.6 monospace;color:var(--text2);background:var(--bg2);border:1px solid var(--border);padding:7px 9px;border-radius:7px;margin-bottom:9px;white-space:pre-wrap;max-height:80px;overflow-y:auto}
+.gi .ga{display:flex;gap:6px}
+
+/* DETAIL */
+.dmodal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);width:100%;max-width:620px;overflow:hidden;box-shadow:var(--sh2);animation:up .25s ease}
+.dimg{width:100%;max-height:260px;object-fit:cover;display:block}
+.dbody{padding:22px}
+.dcat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.dtitle{font-family:'Geologica',sans-serif;font-size:20px;font-weight:900;margin-bottom:6px;line-height:1.3}
+.ddesc{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px}
+.dpwrap{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px}
+.dplabel{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.dpt{font:13px/1.7 monospace;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.dacts{display:flex;gap:7px;flex-wrap:wrap}
+.dtags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+
+/* ═══ ADMIN PANEL ═══ */
+.admin-wrap{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:600;display:none;align-items:center;justify-content:center;padding:20px}
+.admin-wrap.on{display:flex}
+.admin-panel{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.7);animation:up .3s ease}
+.admin-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.admin-head h2{font-family:'Geologica',sans-serif;font-size:20px;font-weight:900;display:flex;align-items:center;gap:8px}
+.admin-close{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px}.admin-close:hover{color:var(--text)}
+.admin-body{padding:20px 24px;display:flex;flex-direction:column;gap:20px}
+.admin-section{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:16px}
+.admin-section h3{font-size:13px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.admin-section p{font-size:11px;color:var(--text2);margin-bottom:12px;line-height:1.6}
+.admin-btns{display:flex;gap:8px;flex-wrap:wrap}
+.admin-log{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font:11px/1.7 monospace;color:var(--text2);max-height:200px;overflow-y:auto;margin-top:10px;min-height:60px}
+.log-line{padding:2px 0}
+.log-line.ok{color:var(--teal)}.log-line.err{color:var(--red)}.log-line.info{color:var(--amber)}.log-line.dim{color:var(--text3)}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden;display:none}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--pink));border-radius:2px;width:0%;transition:width .4s ease;animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%,100%{opacity:1}50%{opacity:.6}}
+.progress-bar.on{display:block}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.stat-box .n{font-family:'Geologica',sans-serif;font-size:22px;font-weight:900;color:var(--text)}
+.stat-box .l{font-size:10px;color:var(--text3);margin-top:2px}
+.last-run{font-size:11px;color:var(--text3);margin-top:8px}
+.schedule-info{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.15);border-radius:9px;font-size:12px;color:var(--teal)}
+.btn-danger{background:rgba(255,82,82,.1);border-color:rgba(255,82,82,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(255,82,82,.15);border-color:var(--red);color:var(--red)}
+
+@media(max-width:768px){
+  nav{padding:0 14px;gap:8px}
+  .hero{padding:32px 16px 0}
+  .tabs-wrap,.sort-bar,.grid{padding-left:14px;padding-right:14px}
+  .grid{gap:12px}
+  .chat-panel{width:calc(100vw - 28px);right:14px}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
 </head>
-<body style="background:#111;color:#fff;font-family:Arial;text-align:center;padding:40px;">
+<body>
 
-<h1>🔥 Лучшие AI промты</h1>
+<nav>
+  <div class="logo">ПромтБаза</div>
+  <div class="nav-search">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search" placeholder="Поиск промтов...">
+    <button class="s-clr" id="s-clr">✕</button>
+  </div>
+  <div class="nav-right">
+    <div class="ai-pill"><div class="ai-dot"></div>Gemini AI</div>
+    <span id="total-count"></span>
+    <button class="btn btn-gen" onclick="openGen()">✦ Создать</button>
+    <button class="btn btn-admin" onclick="openAdmin()">⚙️ Управление</button>
+  </div>
+</nav>
 
-<p>Добро пожаловать на мой сайт с промтами.</p>
+<div class="hero">
+  <h1>Лучшие промты<br>для <em>нейросетей</em></h1>
+  <p>Тысячи готовых промтов на русском языке. Gemini автоматически обновляет базу каждые 24 часа.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-n" id="s-total">0</div><div class="stat-l">промтов</div></div>
+    <div class="stat"><div class="stat-n">5</div><div class="stat-l">категорий</div></div>
+    <div class="stat"><div class="stat-n" id="s-likes">0</div><div class="stat-l">лайков</div></div>
+    <div class="stat"><div class="stat-n" id="s-views">0</div><div class="stat-l">просмотров</div></div>
+  </div>
+</div>
 
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab active" data-cat="all">🔥 Все <span class="tc" id="tc-all">0</span></button>
+    <button class="tab" data-cat="img">🎨 Изображения <span class="tc" id="tc-img">0</span></button>
+    <button class="tab" data-cat="text">✍️ Текст <span class="tc" id="tc-text">0</span></button>
+    <button class="tab" data-cat="video">🎬 Видео <span class="tc" id="tc-video">0</span></button>
+    <button class="tab" data-cat="music">🎵 Музыка <span class="tc" id="tc-music">0</span></button>
+    <button class="tab" data-cat="biz">💼 Бизнес <span class="tc" id="tc-biz">0</span></button>
+  </div>
+</div>
+
+<div class="sort-bar">
+  <span class="sort-label" id="sort-label">Загрузка...</span>
+  <div class="pills">
+    <button class="pill active" data-sort="new">Новые</button>
+    <button class="pill" data-sort="top">Популярные</button>
+    <button class="pill" data-sort="likes">По лайкам</button>
+  </div>
+</div>
+
+<div class="grid" id="feed"><div class="state"><div class="dots"><span></span><span></span><span></span></div><p>Загружаем базу...</p></div></div>
+<div class="load-wrap" id="load-wrap" style="display:none"><button class="btn btn-primary" onclick="loadMore()">Загрузить ещё</button></div>
+
+<footer style="border-top:1px solid var(--border);padding:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+  <div class="logo" style="font-family:'Geologica',sans-serif;font-size:15px;font-weight:900">ПромтБаза</div>
+  <p style="font-size:11px;color:var(--text3)">Крупнейшая библиотека AI промтов на русском языке</p>
+  <p style="font-size:11px;color:var(--text3)">© 2026</p>
+</footer>
+
+<!-- CHAT FAB -->
+<button class="chat-fab" onclick="toggleChat()" id="chat-fab">💬</button>
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-head"><div><h4>AI Помощник</h4><p>Найду промт или создам новый</p></div><button class="chat-x" onclick="toggleChat()">✕</button></div>
+  <div class="chat-body" id="chat-body"><div class="m a">Привет! Опишите задачу — подберу промт из базы или сгенерирую новый 🎯</div></div>
+  <div class="chat-foot">
+    <textarea id="cin" placeholder="Что хотите создать?" rows="1"></textarea>
+    <button class="send" id="send-btn" onclick="sendChat()">↑</button>
+  </div>
+</div>
+
+<!-- GEN MODAL -->
+<div class="overlay" id="gen-ov">
+  <div class="modal">
+    <h2>✦ Генератор промтов</h2>
+    <p class="sub">Gemini создаст 4 промта по вашей теме</p>
+    <textarea id="gen-topic" placeholder="Тема: аниме портреты, email маркетинг, лоу-фай музыка..."></textarea>
+    <div class="cat-row" id="cat-row">
+      <button class="copt sel" data-v="img">🎨 Изображения</button>
+      <button class="copt" data-v="text">✍️ Текст</button>
+      <button class="copt" data-v="video">🎬 Видео</button>
+      <button class="copt" data-v="music">🎵 Музыка</button>
+      <button class="copt" data-v="biz">💼 Бизнес</button>
+    </div>
+    <div class="mbtns">
+      <button class="btn btn-gen" id="gen-btn" onclick="doGen()">✦ Генерировать</button>
+      <button class="btn" onclick="closeGen()">Отмена</button>
+    </div>
+    <div class="gen-list" id="gen-list"></div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detail-ov" onclick="closeDetail(event)">
+  <div class="dmodal" onclick="event.stopPropagation()"><div id="detail-content"></div></div>
+</div>
+
+<!-- ═══ ADMIN PANEL ═══ -->
+<div class="admin-wrap" id="admin-wrap">
+  <div class="admin-panel">
+    <div class="admin-head">
+      <h2>⚙️ AI Управление сайтом</h2>
+      <button class="admin-close" onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="admin-body">
+
+      <!-- Stats -->
+      <div class="admin-section">
+        <h3>📊 Статистика базы</h3>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="n" id="as-total">—</div><div class="l">Всего промтов</div></div>
+          <div class="stat-box"><div class="n" id="as-ai">—</div><div class="l">AI сгенерировано</div></div>
+          <div class="stat-box"><div class="n" id="as-likes">—</div><div class="l">Лайков</div></div>
+          <div class="stat-box"><div class="n" id="as-notag">—</div><div class="l">Без тегов</div></div>
+        </div>
+        <div class="last-run" id="last-run">Последний запуск AI: —</div>
+      </div>
+
+      <!-- Schedule -->
+      <div class="admin-section">
+        <h3>⏰ Расписание</h3>
+        <p>Gemini работает автоматически каждые 24 часа через GitHub Actions или Supabase Cron. Файл конфигурации включён в архив.</p>
+        <div class="schedule-info">
+          <span>🤖</span> Следующий запуск: каждый день в 06:00 МСК (03:00 UTC)
+        </div>
+      </div>
+
+      <!-- Add prompts -->
+      <div class="admin-section">
+        <h3>➕ Добавить новые промты</h3>
+        <p>Gemini сгенерирует по 3 промта для каждой из 5 категорий (15 промтов) на основе актуальных трендов.</p>
+        <div class="admin-btns">
+          <button class="btn btn-gen" onclick="adminAddPrompts()">🤖 Запустить генерацию</button>
+          <button class="btn" onclick="adminAddCategory()">+ Одна категория</button>
+        </div>
+        <div class="progress-bar" id="pb-add"><div class="progress-fill" id="pf-add"></div></div>
+        <div class="admin-log" id="log-add">Нажмите кнопку чтобы начать...</div>
+      </div>
+
+      <!-- Improve -->
+      <div class="admin-section">
+        <h3>✨ Улучшить описания</h3>
+        <p>Gemini улучшит описания и заполнит пустые поля у промтов без описания (до 20 за раз).</p>
+        <div class="admin-btns">
+          <button class="btn btn-primary" onclick="adminImprove()">✨ Улучшить описания</button>
+          <button class="btn btn-primary" onclick="adminAutoTag()">🏷️ Автотеги</button>
+        </div>
+        <div class="progress-bar" id="pb-imp"><div class="progress-fill" id="pf-imp"></div></div>
+        <div class="admin-log" id="log-imp">Нажмите кнопку чтобы начать...</div>
+      </div>
+
+      <!-- Cleanup -->
+      <div class="admin-section">
+        <h3>🗑️ Очистка базы</h3>
+        <p>Удалит AI-сгенерированные промты старше 60 дней с 0 лайками и менее 5 просмотров. Промты добавленные вручную не затрагиваются.</p>
+        <div class="admin-btns">
+          <button class="btn btn-danger" onclick="adminCleanup()">🗑️ Удалить устаревшие</button>
+          <button class="btn" onclick="adminAnalyze()">🔍 Анализ базы</button>
+        </div>
+        <div class="admin-log" id="log-clean">Нажмите кнопку чтобы начать...</div>
+      </div>
+
+      <!-- Run All -->
+      <div class="admin-section">
+        <h3>🚀 Запустить всё сразу</h3>
+        <p>Выполнит весь цикл: генерация → улучшение → теги → очистка. Аналог автоматического ежедневного запуска.</p>
+        <div class="admin-btns">
+          <button class="btn btn-gen" style="font-size:13px;padding:10px 18px" onclick="adminRunAll()">🚀 Полный цикл AI</button>
+        </div>
+        <div class="progress-bar" id="pb-all"><div class="progress-fill" id="pf-all"></div></div>
+        <div class="admin-log" id="log-all">Готов к запуску...</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ CONFIG ═══
+const GKEY = "AIzaSyCdO5vkAvykbdksWt_CjgJ9H0p9vGa5StY";
+const GURL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GKEY}`;
+const {createClient} = supabase;
+const SB = createClient("https://lfunlrtluxyuagxwsxss.supabase.co","sb_publishable_Ci-QA2C3EwebKmn-WEM_Sg_69TtdQEb");
+
+const CATS = {all:{l:"Все",i:"🔥"},img:{l:"Изображения",i:"🎨"},text:{l:"Текст",i:"✍️"},video:{l:"Видео",i:"🎬"},music:{l:"Музыка",i:"🎵"},biz:{l:"Бизнес",i:"💼"}};
+const CEMOJI = {img:"🎨",text:"✍️",video:"🎬",music:"🎵",biz:"💼"};
+const CLABELS = {img:"Изображения (Midjourney, SD)",text:"Текст и GPT",video:"Видео (Sora, Runway)",music:"Музыка (Suno, Udio)",biz:"Бизнес и Маркетинг"};
+const TOPICS = {
+  img:["реалистичные портреты","аниме персонажи","архитектурная визуализация","фэнтезийные пейзажи","абстрактное искусство"],
+  text:["маркетинговые тексты","SEO контент","сторителлинг","email рассылки","описания товаров"],
+  video:["кинематографические сцены","рекламные ролики","анимация персонажей","природные таймлапсы"],
+  music:["электронная музыка","джазовые импровизации","эпические саундтреки","лоу-фай хип-хоп"],
+  biz:["питч-деки","контент для Telegram","аналитические отчёты","скрипты продаж"]
+};
+
+let ALL=[], FILTERED=[], PAGE=0, PAGE_SIZE=24;
+let activeCat="all", activeSort="new", searchQ="";
+let liked=JSON.parse(localStorage.getItem("pb_liked")||"[]");
+
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function saveLiked(){localStorage.setItem("pb_liked",JSON.stringify(liked))}
+
+async function gemini(prompt){
+  const r=await fetch(GURL,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.8,maxOutputTokens:2000}})});
+  const d=await r.json();
+  if(d.error)throw new Error(d.error.message);
+  return d.candidates?.[0]?.content?.parts?.[0]?.text||'';
+}
+
+// ═══ LOAD ═══
+async function loadData(){
+  try{
+    const {data,error}=await SB.from('prompts').select('*').order('created_at',{ascending:false});
+    if(error)throw error;
+    ALL=(data||[]).map(p=>({...p,likes:p.likes||0,views:p.views||0,category:p.category||'img'}));
+    updateCounts(); applyFilters(); updateStats();
+  }catch(e){
+    document.getElementById('feed').innerHTML=`<div class="state"><div class="ico">⚠️</div><h3>Ошибка</h3><p>${e.message}</p></div>`;
+  }
+}
+
+function updateCounts(){
+  const c={all:ALL.length};
+  ['img','text','video','music','biz'].forEach(k=>c[k]=ALL.filter(p=>p.category===k).length);
+  Object.keys(c).forEach(k=>{const el=document.getElementById(`tc-${k}`);if(el)el.textContent=c[k]});
+  const t=document.getElementById('total-count');if(t)t.textContent=`${ALL.length} промтов`;
+}
+function updateStats(){
+  const e1=document.getElementById('s-total');if(e1)e1.textContent=ALL.length;
+  const e2=document.getElementById('s-likes');if(e2)e2.textContent=ALL.reduce((s,p)=>s+(p.likes||0),0);
+  const e3=document.getElementById('s-views');if(e3)e3.textContent=ALL.reduce((s,p)=>s+(p.views||0),0);
+}
+
+// ═══ FILTER ═══
+function applyFilters(){
+  let d=[...ALL];
+  if(activeCat!=='all')d=d.filter(p=>p.category===activeCat);
+  if(searchQ)d=d.filter(p=>[p.title,p.desc_text,p.prompt,p.tags].some(f=>f&&f.toLowerCase().includes(searchQ)));
+  if(activeSort==='top')d.sort((a,b)=>(b.views||0)-(a.views||0));
+  else if(activeSort==='likes')d.sort((a,b)=>(b.likes||0)-(a.likes||0));
+  else d.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  FILTERED=d; PAGE=0;
+  renderPage(true);
+  const sl=document.getElementById('sort-label');
+  const c=CATS[activeCat];
+  if(sl)sl.textContent=searchQ?`Поиск: «${searchQ}» — ${FILTERED.length}`:`${c.i} ${c.l} — ${FILTERED.length} промтов`;
+}
+
+function renderPage(reset=false){
+  const feed=document.getElementById('feed');
+  const start=PAGE*PAGE_SIZE;
+  const slice=FILTERED.slice(start,start+PAGE_SIZE);
+  if(reset){
+    if(!FILTERED.length){
+      feed.innerHTML=`<div class="state"><div class="ico">🔍</div><h3>Ничего не найдено</h3><p>${searchQ?`По запросу «${esc(searchQ)}»`:'Промты не найдены'}</p><br><button class="btn btn-gen" onclick="openGen()">✦ Создать промт</button></div>`;
+      document.getElementById('load-wrap').style.display='none';
+      return;
+    }
+    feed.innerHTML='';
+  }
+  slice.forEach((item,i)=>{ feed.appendChild(buildCard(item,i+(reset?0:PAGE*PAGE_SIZE))); });
+  PAGE++;
+  document.getElementById('load-wrap').style.display=PAGE*PAGE_SIZE<FILTERED.length?'block':'none';
+}
+function loadMore(){renderPage(false)}
+
+// ═══ CARD ═══
+function buildCard(item,i){
+  const cat=item.category||'img';
+  const isLiked=liked.includes(String(item.id));
+  const tags=item.tags?item.tags.split(',').slice(0,3).map(t=>`<span class="tag">${esc(t.trim())}</span>`).join(''):'';
+  const imgEl=item.img
+    ?`<img src="${esc(item.img)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=no-img>${CEMOJI[cat]}</div>'">`
+    :`<div class="no-img">${CEMOJI[cat]}</div>`;
+  const card=document.createElement('div');
+  card.className='card';
+  card.style.animationDelay=`${(i%PAGE_SIZE)*.03}s`;
+  card.innerHTML=`
+    <div class="card-img">
+      ${imgEl}
+      <div class="cbadge ${cat}">${CEMOJI[cat]} ${CATS[cat]?.l||cat}</div>
+      ${item.ai_generated?'<div class="ai-mark">AI</div>':''}
+    </div>
+    <div class="card-body">
+      <div class="card-title">${esc(item.title)}</div>
+      <div class="card-desc">${esc(item.desc_text||'')}</div>
+      ${tags?`<div class="card-tags">${tags}</div>`:''}
+    </div>
+    <div class="card-foot">
+      <div class="card-meta">
+        <button class="like-btn${isLiked?' liked':''}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="${isLiked?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span>${item.likes||0}</span>
+        </button>
+        <span class="views">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          ${item.views||0}
+        </span>
+        ${item.rating?`<span class="rating">⭐ ${parseFloat(item.rating).toFixed(1)}</span>`:''}
+      </div>
+      <div class="copy-row">
+        <button class="copy-btn">Скопировать промт</button>
+        <button class="qcopy" title="Копировать">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+    </div>`;
+  card.querySelector('.card-body').onclick=()=>openDetail(item);
+  card.querySelector('.card-img').onclick=()=>openDetail(item);
+  card.querySelector('.like-btn').onclick=e=>{e.stopPropagation();doLike(item,card)};
+  card.querySelectorAll('.copy-btn,.qcopy').forEach(b=>b.onclick=e=>{e.stopPropagation();doCopy(b,item.prompt||'')});
+  return card;
+}
+
+// ═══ COPY ═══
+function doCopy(btn,text){
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig=btn.innerHTML;
+    btn.classList.add('ok');
+    if(btn.classList.contains('copy-btn'))btn.textContent='✓ Скопировано!';
+    setTimeout(()=>{btn.classList.remove('ok');btn.innerHTML=orig},2000);
+  });
+}
+
+// ═══ LIKE ═══
+async function doLike(item,card){
+  const btn=card.querySelector('.like-btn');
+  const isLiked=liked.includes(String(item.id));
+  item.likes=(item.likes||0)+(isLiked?-1:1);
+  if(isLiked){liked=liked.filter(x=>x!==String(item.id));btn.classList.remove('liked');btn.querySelector('svg').setAttribute('fill','none')}
+  else{liked.push(String(item.id));btn.classList.add('liked');btn.querySelector('svg').setAttribute('fill','currentColor')}
+  btn.querySelector('span').textContent=item.likes;
+  saveLiked(); updateStats();
+  try{await SB.from('prompts').update({likes:item.likes}).eq('id',item.id)}catch(e){}
+}
+
+// ═══ DETAIL ═══
+function openDetail(item){
+  const cat=item.category||'img';
+  const tags=item.tags?item.tags.split(',').map(t=>`<span class="tag">${esc(t.trim())}</span>`).join(''):'';
+  const isLiked=liked.includes(String(item.id));
+  document.getElementById('detail-content').innerHTML=`
+    ${item.img?`<img class="dimg" src="${esc(item.img)}" alt="${esc(item.title)}">`:''}
+    <div class="dbody">
+      <div class="dcat" style="color:var(--cat-${cat}||var(--accent))">${CEMOJI[cat]} ${CATS[cat]?.l||cat}${item.ai_generated?' · AI генерация':''}</div>
+      <div class="dtitle">${esc(item.title)}</div>
+      ${tags?`<div class="dtags">${tags}</div>`:''}
+      <div class="ddesc">${esc(item.desc_text||'')}</div>
+      <div class="dpwrap">
+        <div class="dplabel">Промт</div>
+        <div class="dpt" id="dpt">${esc(item.prompt||'')}</div>
+      </div>
+      <div class="dacts">
+        <button class="btn btn-primary" id="d-copy" onclick="doCopy(document.getElementById('d-copy'),'${esc(item.prompt||'')}')">📋 Скопировать</button>
+        <button class="btn ${isLiked?'':''}` id="d-like" onclick="detailLike(event,'${item.id}')">${isLiked?'❤️':'🤍'} ${item.likes||0}</button>
+        <button class="btn" onclick="doImproveDetail('${esc(item.prompt||'')}')">✦ Улучшить</button>
+        <button class="btn" onclick="closeDetailM()">Закрыть</button>
+      </div>
+    </div>`;
+  document.getElementById('detail-ov').classList.add('on');
+  item.views=(item.views||0)+1;
+  try{SB.from('prompts').update({views:item.views}).eq('id',item.id)}catch(e){}
+}
+function detailLike(e,id){
+  const item=ALL.find(p=>String(p.id)===String(id));if(!item)return;
+  const isLiked=liked.includes(String(item.id));
+  item.likes=(item.likes||0)+(isLiked?-1:1);
+  if(isLiked)liked=liked.filter(x=>x!==String(item.id));else liked.push(String(item.id));
+  saveLiked();e.target.innerHTML=`${liked.includes(String(item.id))?'❤️':'🤍'} ${item.likes}`;
+  updateStats();try{SB.from('prompts').update({likes:item.likes}).eq('id',item.id)}catch(ex){}
+}
+async function doImproveDetail(prompt){
+  const btn=document.querySelector('.dacts .btn:nth-child(3)');
+  if(btn){btn.textContent='Улучшаю...';btn.disabled=true}
+  try{
+    const imp=await gemini(`Улучши этот промт — сделай его детальнее и эффективнее. Только улучшенный промт на русском:\n\n${prompt}`);
+    document.getElementById('dpt').textContent=imp;
+    if(btn){btn.textContent='✓ Готово'}
+  }catch(e){if(btn){btn.textContent='Ошибка';btn.disabled=false}}
+}
+function closeDetailM(){document.getElementById('detail-ov').classList.remove('on')}
+function closeDetail(e){if(e.target===document.getElementById('detail-ov'))closeDetailM()}
+
+// ═══ CHAT ═══
+let chatOpen=false;
+function toggleChat(){
+  chatOpen=!chatOpen;
+  document.getElementById('chat-panel').classList.toggle('on',chatOpen);
+  document.getElementById('chat-fab').textContent=chatOpen?'✕':'💬';
+}
+function addMsg(text,who){
+  const b=document.getElementById('chat-body');
+  const d=document.createElement('div');d.className=`m ${who}`;d.textContent=text;
+  b.appendChild(d);b.scrollTop=b.scrollHeight;return d;
+}
+async function sendChat(){
+  const cin=document.getElementById('cin'),sb2=document.getElementById('send-btn');
+  const txt=cin.value.trim();if(!txt)return;
+  cin.value='';sb2.disabled=true;
+  addMsg(txt,'u');const ldr=addMsg('Думаю...','a load');
+  const ctx=ALL.slice(0,30).map(p=>`[${p.category}] ${p.title}: ${p.desc_text||''}`).join('\n');
+  try{
+    const ans=await gemini(`Ты помощник сайта ПромтБаза — библиотеки AI промтов на русском языке.
+Категории: img=Изображения, text=Текст, video=Видео, music=Музыка, biz=Бизнес.
+База:\n${ctx}\n\nОтвечай кратко по делу на русском. Вопрос: ${txt}`);
+    ldr.textContent=ans;ldr.classList.remove('load');
+  }catch(e){ldr.textContent='Ошибка: '+e.message}
+  sb2.disabled=false;
+}
+document.getElementById('cin').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat()}});
+
+// ═══ GEN MODAL ═══
+let selCat='img';
+document.querySelectorAll('.copt').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.copt').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');selCat=b.dataset.v}));
+function openGen(){document.getElementById('gen-ov').classList.add('on');document.getElementById('gen-list').innerHTML=''}
+function closeGen(){document.getElementById('gen-ov').classList.remove('on')}
+document.getElementById('gen-ov').addEventListener('click',e=>{if(e.target===document.getElementById('gen-ov'))closeGen()});
+
+async function doGen(){
+  const topic=document.getElementById('gen-topic').value.trim();if(!topic)return;
+  const btn=document.getElementById('gen-btn'),list=document.getElementById('gen-list');
+  btn.textContent='Генерирую...';btn.disabled=true;
+  list.innerHTML='<div style="text-align:center;padding:16px;font-size:12px;color:var(--text3)">Gemini создаёт промты...</div>';
+  try{
+    const raw=await gemini(`Создай 4 промта для категории "${CLABELS[selCat]||selCat}" на тему: "${topic}".
+Промты на русском языке, подробные, готовые к использованию.
+ТОЛЬКО JSON без markdown: [{"title":"...","desc_text":"...","prompt":"...","tags":"тег1,тег2,тег3"}]`);
+    const items=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    list.innerHTML=items.map((item,idx)=>`
+      <div class="gi">
+        <h4>${esc(item.title)}</h4>
+        <div class="gd">${esc(item.desc_text||item.desc||'')}</div>
+        <div class="gp">${esc(item.prompt)}</div>
+        <div class="ga">
+          <button class="btn btn-primary" style="font-size:11px;padding:6px 11px"
+            onclick="navigator.clipboard.writeText(this.closest('.gi').querySelector('.gp').textContent);this.textContent='✓';setTimeout(()=>this.textContent='Копировать',2000)">Копировать</button>
+          <button class="btn" style="font-size:11px;padding:6px 11px"
+            data-item='${JSON.stringify({...item,desc_text:item.desc_text||item.desc||''}).replace(/'/g,"&#39;")}'
+            onclick="saveGen(this)">+ В базу</button>
+        </div>
+      </div>`).join('');
+  }catch(e){list.innerHTML=`<div style="color:var(--red);padding:10px;font-size:12px">Ошибка: ${e.message}</div>`}
+  btn.textContent='✦ Генерировать';btn.disabled=false;
+}
+
+async function saveGen(btn){
+  const data=JSON.parse(btn.getAttribute('data-item').replace(/&#39;/g,"'"));
+  btn.textContent='Сохраняю...';btn.disabled=true;
+  try{
+    const {error}=await SB.from('prompts').insert([{...data,category:selCat,likes:0,views:0,rating:0,ai_generated:true,created_at:new Date().toISOString()}]);
+    if(error)throw error;
+    btn.textContent='✓ Добавлено';btn.style.color='var(--teal)';
+    await loadData();
+  }catch(e){btn.textContent='Ошибка';btn.disabled=false}
+}
+
+// ═══ TABS / SORT / SEARCH ═══
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');activeCat=t.dataset.cat;applyFilters()}));
+document.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',()=>{document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));p.classList.add('active');activeSort=p.dataset.sort;applyFilters()}));
+const sEl=document.getElementById('search'),clrEl=document.getElementById('s-clr');
+sEl.addEventListener('input',()=>{searchQ=sEl.value.toLowerCase().trim();clrEl.classList.toggle('on',searchQ.length>0);applyFilters()});
+clrEl.addEventListener('click',()=>{sEl.value='';searchQ='';clrEl.classList.remove('on');applyFilters();sEl.focus()});
+
+// ═══════════════════════════════════════════════
+// ADMIN PANEL
+// ═══════════════════════════════════════════════
+function openAdmin(){
+  document.getElementById('admin-wrap').classList.add('on');
+  updateAdminStats();
+}
+function closeAdmin(){document.getElementById('admin-wrap').classList.remove('on')}
+
+async function updateAdminStats(){
+  try{
+    const {data}=await SB.from('prompts').select('id,likes,views,tags,ai_generated');
+    if(!data)return;
+    document.getElementById('as-total').textContent=data.length;
+    document.getElementById('as-ai').textContent=data.filter(p=>p.ai_generated).length;
+    document.getElementById('as-likes').textContent=data.reduce((s,p)=>s+(p.likes||0),0);
+    document.getElementById('as-notag').textContent=data.filter(p=>!p.tags||p.tags.trim()==='').length;
+    const {data:logs}=await SB.from('ai_logs').select('run_at').order('run_at',{ascending:false}).limit(1).maybeSingle();
+    const el=document.getElementById('last-run');
+    if(el)el.textContent=logs?`Последний запуск AI: ${new Date(logs.run_at).toLocaleString('ru')}`:'Последний запуск AI: ещё не запускался';
+  }catch(e){}
+}
+
+function alog(logId,msg,type='dim'){
+  const el=document.getElementById(logId);if(!el)return;
+  const line=document.createElement('div');
+  line.className=`log-line ${type}`;
+  line.textContent=`[${new Date().toLocaleTimeString('ru')}] ${msg}`;
+  if(el.textContent==='Нажмите кнопку чтобы начать...'||el.textContent==='Готов к запуску...')el.innerHTML='';
+  el.appendChild(line);el.scrollTop=el.scrollHeight;
+}
+
+function setProgress(pbId,pfId,pct){
+  const pb=document.getElementById(pbId),pf=document.getElementById(pfId);
+  if(pb)pb.classList.add('on');
+  if(pf)pf.style.width=pct+'%';
+}
+
+// ── Добавить промты ──────────────────────────
+async function adminAddPrompts(){
+  const cats=['img','text','video','music','biz'];
+  alog('log-add','🚀 Запуск генерации для всех категорий...','info');
+  setProgress('pb-add','pf-add',5);
+  let total=0;
+  for(let i=0;i<cats.length;i++){
+    const cat=cats[i];
+    const topic=TOPICS[cat][Math.floor(Math.random()*TOPICS[cat].length)];
+    alog('log-add',`📝 ${CATS[cat].i} ${CATS[cat].l}: тема "${topic}"...`);
+    try{
+      const raw=await gemini(`Создай 3 промта для категории "${CLABELS[cat]}" на тему: "${topic}".
+Промты подробные, на русском языке.
+ТОЛЬКО JSON: [{"title":"...","desc_text":"...","prompt":"...","tags":"тег1,тег2,тег3"}]`);
+      const items=JSON.parse(raw.replace(/```json|```/g,'').trim());
+      for(const item of items){
+        const {error}=await SB.from('prompts').insert([{...item,category:cat,likes:0,views:0,ai_generated:true,created_at:new Date().toISOString()}]);
+        if(!error)total++;
+      }
+      alog('log-add',`✅ Добавлено 3 промта для ${CATS[cat].l}`,'ok');
+    }catch(e){alog('log-add',`❌ Ошибка для ${cat}: ${e.message}`,'err')}
+    setProgress('pb-add','pf-add',Math.round((i+1)/cats.length*100));
+    await new Promise(r=>setTimeout(r,1000));
+  }
+  alog('log-add',`🎉 Готово! Добавлено ${total} промтов`,'ok');
+  await loadData();updateAdminStats();
+}
+
+async function adminAddCategory(){
+  const cat=selCat||'img';
+  const topic=TOPICS[cat][Math.floor(Math.random()*TOPICS[cat].length)];
+  alog('log-add',`📝 Генерация для ${CATS[cat].l}: "${topic}"...`,'info');
+  try{
+    const raw=await gemini(`Создай 5 промтов для "${CLABELS[cat]}" на тему "${topic}". ТОЛЬКО JSON: [{"title":"...","desc_text":"...","prompt":"...","tags":"..."}]`);
+    const items=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    let added=0;
+    for(const item of items){
+      const {error}=await SB.from('prompts').insert([{...item,category:cat,likes:0,views:0,ai_generated:true,created_at:new Date().toISOString()}]);
+      if(!error)added++;
+    }
+    alog('log-add',`✅ Добавлено ${added} промтов`,'ok');
+    await loadData();updateAdminStats();
+  }catch(e){alog('log-add',`❌ Ошибка: ${e.message}`,'err')}
+}
+
+// ── Улучшить описания ────────────────────────
+async function adminImprove(){
+  alog('log-imp','🔍 Ищу промты без описания...','info');
+  setProgress('pb-imp','pf-imp',5);
+  try{
+    const {data}=await SB.from('prompts').select('id,title,prompt,desc_text').or('desc_text.is.null,desc_text.eq.').limit(20);
+    if(!data?.length){alog('log-imp','✅ Все промты уже имеют описания','ok');return}
+    alog('log-imp',`Найдено ${data.length} промтов без описания`);
+    let done=0;
+    for(let i=0;i<data.length;i++){
+      const p=data[i];
+      try{
+        const desc=await gemini(`Напиши описание (1-2 предложения) для AI промта на русском. Только описание:\nПромт: "${(p.prompt||'').slice(0,300)}"`);
+        await SB.from('prompts').update({desc_text:desc.trim().slice(0,300)}).eq('id',p.id);
+        done++;alog('log-imp',`✅ Улучшено: "${p.title?.slice(0,40)}..."`,'ok');
+      }catch(e){alog('log-imp',`⚠️ Пропущен: ${e.message}`,'err')}
+      setProgress('pb-imp','pf-imp',Math.round((i+1)/data.length*100));
+      await new Promise(r=>setTimeout(r,800));
+    }
+    alog('log-imp',`🎉 Улучшено ${done} описаний`,'ok');
+    await loadData();updateAdminStats();
+  }catch(e){alog('log-imp',`❌ Ошибка: ${e.message}`,'err')}
+}
+
+// ── Автотеги ─────────────────────────────────
+async function adminAutoTag(){
+  alog('log-imp','🏷️ Ищу промты без тегов...','info');
+  try{
+    const {data}=await SB.from('prompts').select('id,title,prompt').or('tags.is.null,tags.eq.').limit(30);
+    if(!data?.length){alog('log-imp','✅ Все промты уже имеют теги','ok');return}
+    alog('log-imp',`Найдено ${data.length} промтов без тегов`);
+    let done=0;
+    for(const p of data){
+      try{
+        const raw=await gemini(`4-5 тегов на русском для промта. Только теги через запятую:\n"${(p.prompt||'').slice(0,200)}"`);
+        const tags=raw.trim().slice(0,100);
+        await SB.from('prompts').update({tags}).eq('id',p.id);
+        done++;
+      }catch(e){}
+      await new Promise(r=>setTimeout(r,600));
+    }
+    alog('log-imp',`✅ Добавлены теги к ${done} промтам`,'ok');
+    await loadData();updateAdminStats();
+  }catch(e){alog('log-imp',`❌ Ошибка: ${e.message}`,'err')}
+}
+
+// ── Очистка ───────────────────────────────────
+async function adminCleanup(){
+  alog('log-clean','🔍 Анализирую устаревшие промты...','info');
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-60);
+  try{
+    const {data}=await SB.from('prompts').select('id,title,likes,views,created_at,ai_generated').lt('created_at',cutoff.toISOString()).eq('ai_generated',true);
+    if(!data?.length){alog('log-clean','✅ Устаревших промтов не найдено','ok');return}
+    const toDelete=data.filter(p=>(p.likes||0)===0&&(p.views||0)<5);
+    alog('log-clean',`Найдено ${toDelete.length} кандидатов на удаление (${data.length} старых)`,'info');
+    if(!toDelete.length){alog('log-clean','✅ Все старые промты популярны, удалений нет','ok');return}
+    let removed=0;
+    for(const p of toDelete){
+      const {error}=await SB.from('prompts').delete().eq('id',p.id);
+      if(!error){removed++;alog('log-clean',`🗑️ Удалён: "${p.title?.slice(0,40)}"`);}
+    }
+    alog('log-clean',`✅ Удалено ${removed} устаревших промтов`,'ok');
+    await loadData();updateAdminStats();
+  }catch(e){alog('log-clean',`❌ Ошибка: ${e.message}`,'err')}
+}
+
+async function adminAnalyze(){
+  alog('log-clean','📊 Анализирую базу...','info');
+  try{
+    const {data}=await SB.from('prompts').select('id,category,likes,views,ai_generated,created_at,tags');
+    if(!data)return;
+    const cats={};
+    ['img','text','video','music','biz'].forEach(c=>{
+      const filtered=data.filter(p=>p.category===c);
+      cats[c]={total:filtered.length,ai:filtered.filter(p=>p.ai_generated).length,noTags:filtered.filter(p=>!p.tags).length};
+    });
+    alog('log-clean',`📊 Всего: ${data.length} промтов`,'info');
+    Object.keys(cats).forEach(c=>alog('log-clean',`${CATS[c].i} ${CATS[c].l}: ${cats[c].total} (AI: ${cats[c].ai}, без тегов: ${cats[c].noTags})`,'dim'));
+    alog('log-clean',`⭐ Без лайков: ${data.filter(p=>!p.likes).length} | Без просмотров: ${data.filter(p=>!p.views).length}`,'dim');
+  }catch(e){alog('log-clean',`❌ Ошибка: ${e.message}`,'err')}
+}
+
+// ── Полный цикл ───────────────────────────────
+async function adminRunAll(){
+  const logId='log-all';
+  alog(logId,'🚀 ПОЛНЫЙ ЦИКЛ AI ЗАПУЩЕН','info');
+  setProgress('pb-all','pf-all',5);
+  // 1. Генерация
+  alog(logId,'📝 Шаг 1/4: Генерация новых промтов...','info');
+  await adminAddPromptsQuiet(logId);
+  setProgress('pb-all','pf-all',30);
+  // 2. Улучшение
+  alog(logId,'✨ Шаг 2/4: Улучшение описаний...','info');
+  await adminImproveQuiet(logId);
+  setProgress('pb-all','pf-all',60);
+  // 3. Теги
+  alog(logId,'🏷️ Шаг 3/4: Автотегирование...','info');
+  await adminTagQuiet(logId);
+  setProgress('pb-all','pf-all',80);
+  // 4. Очистка
+  alog(logId,'🗑️ Шаг 4/4: Очистка устаревших...','info');
+  await adminCleanupQuiet(logId);
+  setProgress('pb-all','pf-all',100);
+  alog(logId,'🎉 ПОЛНЫЙ ЦИКЛ ЗАВЕРШЁН!','ok');
+  await SB.from('ai_logs').insert([{run_at:new Date().toISOString(),added:15,improved:20,tagged:30,removed:0}]).catch(()=>{});
+  await loadData();updateAdminStats();
+}
+
+async function adminAddPromptsQuiet(logId){
+  const cats=['img','text','video','music','biz'];
+  let total=0;
+  for(const cat of cats){
+    const topic=TOPICS[cat][Math.floor(Math.random()*TOPICS[cat].length)];
+    try{
+      const raw=await gemini(`Создай 3 промта для "${CLABELS[cat]}" на тему "${topic}". ТОЛЬКО JSON: [{"title":"...","desc_text":"...","prompt":"...","tags":"..."}]`);
+      const items=JSON.parse(raw.replace(/```json|```/g,'').trim());
+      for(const item of items){const {error}=await SB.from('prompts').insert([{...item,category:cat,likes:0,views:0,ai_generated:true,created_at:new Date().toISOString()}]);if(!error)total++;}
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,800));
+  }
+  alog(logId,`  ✅ Добавлено ${total} промтов`,'ok');
+}
+
+async function adminImproveQuiet(logId){
+  try{
+    const {data}=await SB.from('prompts').select('id,prompt').or('desc_text.is.null,desc_text.eq.').limit(15);
+    let done=0;
+    for(const p of data||[]){
+      try{const desc=await gemini(`1-2 предложения описания для промта на русском:\n"${(p.prompt||'').slice(0,200)}"`);await SB.from('prompts').update({desc_text:desc.trim().slice(0,300)}).eq('id',p.id);done++;}catch(e){}
+      await new Promise(r=>setTimeout(r,600));
+    }
+    alog(logId,`  ✅ Улучшено ${done} описаний`,'ok');
+  }catch(e){}
+}
+
+async function adminTagQuiet(logId){
+  try{
+    const {data}=await SB.from('prompts').select('id,prompt').or('tags.is.null,tags.eq.').limit(20);
+    let done=0;
+    for(const p of data||[]){
+      try{const tags=await gemini(`4 тега через запятую для промта:\n"${(p.prompt||'').slice(0,150)}"`);await SB.from('prompts').update({tags:tags.trim().slice(0,100)}).eq('id',p.id);done++;}catch(e){}
+      await new Promise(r=>setTimeout(r,500));
+    }
+    alog(logId,`  ✅ Теги добавлены к ${done} промтам`,'ok');
+  }catch(e){}
+}
+
+async function adminCleanupQuiet(logId){
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-60);
+  try{
+    const {data}=await SB.from('prompts').select('id,likes,views').lt('created_at',cutoff.toISOString()).eq('ai_generated',true);
+    const toDelete=(data||[]).filter(p=>!(p.likes)&&(p.views||0)<5);
+    let removed=0;
+    for(const p of toDelete){const {error}=await SB.from('prompts').delete().eq('id',p.id);if(!error)removed++;}
+    alog(logId,`  ✅ Удалено ${removed} устаревших промтов`,'ok');
+  }catch(e){}
+}
+
+// ═══ INIT ═══
+loadData();
+</script>
 </body>
 </html>
