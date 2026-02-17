@@ -1,7 +1,47 @@
 <!DOCTYPE html>
 <html>
-<body style="background:black;color:white;text-align:center;padding:40px;">
-<h1>Сайт работает</h1>
+<head>
+  <meta charset="UTF-8">
+  <title>AI Prompts</title>
+</head>
+<body style="background:#111;color:white;font-family:Arial;padding:40px;">
+
+<h1>AI Prompts</h1>
+<div id="prompts"></div>
+
+<script>
+const SUPABASE_URL = "https://bowqcdysazxnxgocblcg.supabase.co"
+const SUPABASE_KEY = "ВСТАВЬ_СЮДА_PUBLISHABLE_KEY"
+
+async function loadPrompts() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/prompts?select=*`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+      }
+    }
+  )
+
+  const data = await res.json()
+  console.log(data)
+
+  const container = document.getElementById("prompts")
+
+  data.forEach(p => {
+    container.innerHTML += `
+      <div style="margin-bottom:30px;border-bottom:1px solid #333;padding-bottom:20px;">
+        <h3>${p.title}</h3>
+        <p>${p.text}</p>
+        <small>${p.category}</small>
+      </div>
+    `
+  })
+}
+
+loadPrompts()
+</script>
+
 </body>
 </html>
-
